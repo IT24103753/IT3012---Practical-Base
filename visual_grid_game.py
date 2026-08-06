@@ -1,4 +1,4 @@
-# visual_grid_game.py
+# visual_grid_game.py with traps
 import random
 import tkinter as tk
 
