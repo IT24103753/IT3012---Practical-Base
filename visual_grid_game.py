@@ -1,8 +1,8 @@
 import random
 import tkinter as tk
+from agent import SearchAgent  # Import the new Search Agent
 
 # STEP 1.2: Simple Reflex Agent
-
 class SimpleReflexAgent:
     """Agent that acts purely on instinct without memory."""
     def sense_and_act(self, percept):
@@ -103,9 +103,9 @@ class VisualGridHuntGame:
         self.steps = 0
         self.collision = False
 
-    # STEP 1.1: Partial Observability
+    # Updated for Full Observability required by Search Algorithms
     def get_percept(self) -> dict:
-        """Modified to return only local booleans based on facing direction."""
+        """Returns global state for Search Algorithms."""
         ax, ay = self.agent_pos
         hx, hy = ax, ay
 
@@ -120,7 +120,11 @@ class VisualGridHuntGame:
         return {
             'wall_ahead': wall_ahead,
             'food_here': food_here,
-            'facing': self.facing
+            'facing': self.facing,
+            'agent_pos': tuple(self.agent_pos),       # Start state for search
+            'grid_size': (self.width, self.height),   # Boundaries
+            'walls': self.walls.copy(),               # Obstacles
+            'all_food': self.food_positions.copy()    # Goal states
         }
 
     def execute_action(self, action: str):
@@ -178,7 +182,8 @@ class GridGameGUI:
 
         self.env = VisualGridHuntGame(width=width, height=height, num_food=num_food, num_opponents=num_opponents, custom_walls=walls)
 
-        self.agent = SimpleReflexAgent()  
+        # Initialize the Search Agent. You can change algorithm to 'dfs' or 'ucs'
+        self.agent = SearchAgent(algorithm='bfs')  
         
         max_canvas_dim = 600
         self.cell_size = max(20, min(max_canvas_dim // self.env.width, max_canvas_dim // self.env.height))
@@ -260,7 +265,6 @@ class GridGameGUI:
                 self.btn.config(state="normal")
 
         step()
-
 
 if __name__ == "__main__":
     root = tk.Tk()
