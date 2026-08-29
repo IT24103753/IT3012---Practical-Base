@@ -1,9 +1,8 @@
-# visual_grid_game.py
 import random
 import tkinter as tk
-from agent import SearchAgent  # Import the Search Agent
+from agent import SearchAgent  # Import the new Search Agent
 
-# STEP 1.2: Simple Reflex Agent 
+# STEP 1.2: Simple Reflex Agent
 class SimpleReflexAgent:
     """Agent that acts purely on instinct without memory."""
     def sense_and_act(self, percept):
@@ -17,7 +16,7 @@ class SimpleReflexAgent:
         else:
             return facing  
 
-# STEP 1.3: Model-Based Agent 
+# STEP 1.3: Model-Based Agent
 class ModelBasedAgent:
     """Agent with an internal memory state."""
     def __init__(self):
@@ -104,6 +103,7 @@ class VisualGridHuntGame:
         self.steps = 0
         self.collision = False
 
+    # Updated for Full Observability required by Search Algorithms
     def get_percept(self) -> dict:
         """Returns global state for Search Algorithms."""
         ax, ay = self.agent_pos
@@ -182,8 +182,8 @@ class GridGameGUI:
 
         self.env = VisualGridHuntGame(width=width, height=height, num_food=num_food, num_opponents=num_opponents, custom_walls=walls)
 
-        # Initialize the Search Agent with AStar ('astar', 'bfs', 'dfs', 'ucs')
-        self.agent = SearchAgent(algorithm='astar')  
+        # Initialize the Search Agent. Changed algorithm to 'AStar' as per Step 1.3
+        self.agent = SearchAgent(algorithm='AStar')  
         
         max_canvas_dim = 600
         self.cell_size = max(20, min(max_canvas_dim // self.env.width, max_canvas_dim // self.env.height))
