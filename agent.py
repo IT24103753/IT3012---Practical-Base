@@ -2,6 +2,7 @@ import random
 import math
 from collections import deque
 import heapq
+from logic_engine import KnowledgeBase
 
 class SearchAgent:
     """An agent that uses uninformed search algorithms (BFS, DFS, UCS) and informed search (A*) to find paths to food."""
@@ -10,6 +11,11 @@ class SearchAgent:
         self.algorithm = algorithm
         self.plan = []  # Holds the sequence of actions to execute
         self.actions_pool = ['Up', 'Down', 'Left', 'Right']
+        
+        # Step 3.1: Initialize Knowledge Base and Safety Rules
+        self.kb = KnowledgeBase()
+        self.kb.tell_rule(['TargetVisible', 'HasDust'], 'SafeToEngage')
+        self.kb.tell_rule(['SafeToEngage', 'BloodseekerMissing'], 'Retreat')
 
         # Step 1.1: Testing Checkpoint
         print(f"Testing Checkpoint - Manhattan: (0, 0) to (3, 4) -> {self.manhattan_distance((0, 0), (3, 4))}")
@@ -22,8 +28,8 @@ class SearchAgent:
     def euclidean_distance(self, pos, goal):
         return math.sqrt((pos[0] - goal[0])**2 + (pos[1] - goal[1])**2)
 
-    # Step 1.2: Implementing A* Search
-    def astar_search(self, start_pos, goal_pos, walls, grid_size, heuristic_type='manhattan'):
+    # Step 1.2 & Step 3.2: Implementing A* Search with Knowledge Base Feasibility Check
+    def astar_search(self, start_pos, goal_pos, walls, grid_size, percept=None, heuristic_type='manhattan'):
         pq = []
         reached_states = set()
 
@@ -51,6 +57,19 @@ class SearchAgent:
 
             for action, next_state, step_cost in self.get_successors(current_pos[0], current_pos[1], grid_size, walls):
                 if next_state not in reached_states:
+                    
+                    # Step 3.2: Validating Feasibility via Knowledge Base
+                    if percept and 'tile_percepts' in percept:
+                        tile_percepts = percept['tile_percepts'].get(next_state, [])
+                        self.kb.clear_facts()
+                        for p in tile_percepts:
+                            self.kb.tell_fact(p)
+                        self.kb.forward_chain()
+                        
+                        # If 'Retreat' is deduced, mark the tile as Infeasible and skip it
+                        if 'Retreat' in self.kb.facts:
+                            continue
+
                     new_g = current_g + step_cost
                     
                     if heuristic_type == 'manhattan':
@@ -72,7 +91,7 @@ class SearchAgent:
                 self.plan = self.dfs_search(percept)
             elif self.algorithm == 'ucs':
                 self.plan = self.ucs_search(percept)
-            # Step 1.3: Integrating A* into the Agent's Decision Loop
+            # Step 1.3 & Step 3.2: Integrating A* with percepts parameter
             elif self.algorithm == 'AStar':
                 start_pos = percept['agent_pos']
                 grid_size = percept['grid_size']
@@ -82,7 +101,7 @@ class SearchAgent:
                 if all_food:
                     # Find the closest food item to act as the goal_pos
                     closest_food = min(all_food, key=lambda f: self.manhattan_distance(start_pos, f))
-                    self.plan = self.astar_search(start_pos, closest_food, walls, grid_size, 'manhattan')
+                    self.plan = self.astar_search(start_pos, closest_food, walls, grid_size, percept, 'manhattan')
             
             # Fallback if no path is found (e.g., trapped or no food left)
             if not self.plan:
@@ -114,14 +133,12 @@ class SearchAgent:
         if not all_food:
             return []
 
-        # Queue stores tuples of (current_position, path_of_actions)
         queue = deque([(start, [])])
         visited = set([start])
 
         while queue:
             current, path = queue.popleft()
 
-            # Goal test
             if current in all_food:
                 return path
 
@@ -141,14 +158,12 @@ class SearchAgent:
         if not all_food:
             return []
 
-        # Stack stores tuples of (current_position, path_of_actions)
         stack = [(start, [])]
         visited = set()
 
         while stack:
             current, path = stack.pop()
 
-            # Goal test
             if current in all_food:
                 return path
 
@@ -169,7 +184,6 @@ class SearchAgent:
         if not all_food:
             return []
 
-        # Priority Queue stores tuples of (cumulative_cost, current_position, path_of_actions)
         pq = [(0, start, [])]
         visited = set()
 
@@ -180,7 +194,6 @@ class SearchAgent:
                 continue
             visited.add(current)
 
-            # Goal test
             if current in all_food:
                 return path
 
